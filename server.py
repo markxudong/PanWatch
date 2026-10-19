@@ -1611,7 +1611,13 @@ if os.path.exists(static_dir):
     # SPA 路由：所有非 API 请求返回 index.html
     @app.get("/{path:path}")
     async def serve_spa(path: str):
-        file_path = os.path.join(static_dir, path)
+        # Resolve both traversal segments and symlinks before serving public assets.
+        # The database and credentials live outside this public directory.
+        from fastapi import HTTPException
+        public_root = os.path.realpath(static_dir)
+        file_path = os.path.realpath(os.path.join(public_root, path))
+        if os.path.commonpath([public_root, file_path]) != public_root:
+            raise HTTPException(status_code=404, detail="Not found")
         if os.path.isfile(file_path):
             return FileResponse(file_path)
         return FileResponse(os.path.join(static_dir, "index.html"))
