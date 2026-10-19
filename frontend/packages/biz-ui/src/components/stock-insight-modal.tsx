@@ -1,3 +1,5 @@
+import { stockReportContent } from '@/lib/stock-report'
+import TradingDayPanel from '@/components/TradingDayPanel'
 import { AnalysisMetadata } from './analysis-metadata'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -391,7 +393,7 @@ export default function StockInsightModal(props: {
   const [alerting, setAlerting] = useState(false)
   const [watchingStock, setWatchingStock] = useState<StockItem | null>(null)
   const [watchToggleLoading, setWatchToggleLoading] = useState(false)
-  const [autoSuggesting, setAutoSuggesting] = useState(false)
+  const autoSuggesting = false // Viewing a stock must not start a paid analysis.
   const [imageExporting, setImageExporting] = useState(false)
   const [holdingAgg, setHoldingAgg] = useState<{
     quantity: number
@@ -400,9 +402,8 @@ export default function StockInsightModal(props: {
     marketValue: number
     pnl: number
   } | null>(null)
-  const [holdingLoaded, setHoldingLoaded] = useState(false)
-  const [holdingLoadError, setHoldingLoadError] = useState(false)
-  const autoTriggeredRef = useRef<Record<string, number>>({})
+  const [, setHoldingLoaded] = useState(false)
+  const [, setHoldingLoadError] = useState(false)
   const stockCacheRef = useRef<Record<string, StockItem>>({})
   const resolvedName = useMemo(() => props.stockName || quote?.name || symbol, [props.stockName, quote?.name, symbol])
 
@@ -629,7 +630,10 @@ export default function StockInsightModal(props: {
         const bm = parseToMs(b.updated_at || b.created_at || b.analysis_date) || 0
         return bm - am
       })
-      setReports(merged)
+      setReports(merged.map(r => ({ ...r, content: stockReportContent(r, symbol, resolvedName),
+        title: `${resolvedName}（${symbol}）`, suggestions: r.suggestions?.[symbol] ? { [symbol]: r.suggestions[symbol] } : null,
+        prompt_context: null, context_payload: null, news_debug: null,
+      })))
     } catch {
       setReports([])
     }
@@ -1203,50 +1207,6 @@ export default function StockInsightModal(props: {
     }
   }, [hasHolding, market, resolvedName, symbol, toast, watchingStock])
 
-  const triggerAutoAiSuggestion = useCallback(async () => {
-    // 自动建议仅针对”确认未持仓”的股票，且不自动创建股票/绑定 Agent。
-    if (!symbol || !market || !holdingLoaded || holdingLoadError || hasHolding || autoSuggesting) return
-    const key = `${market}:${symbol}`
-    const lastTs = autoTriggeredRef.current[key] || 0
-    if (Date.now() - lastTs < 5 * 60 * 1000) return
-    autoTriggeredRef.current[key] = Date.now()
-    setAutoSuggesting(true)
-    try {
-      // 使用盘中分析生成详情页建议，输入来自行情和结构化技术指标。
-      await stocksApi.triggerAgent(0, 'intraday_monitor', {
-        allow_unbound: true,
-        symbol,
-        market,
-        name: resolvedName || symbol,
-        bypass_throttle: true,
-        bypass_market_hours: true,
-      })
-      // 异步模式：triggerAgent 立即返回，轮询等待建议生成
-      const before = Date.now()
-      const poll = setInterval(async () => {
-        if (Date.now() - before > 120_000) { clearInterval(poll); setAutoSuggesting(false); return }
-        await loadSuggestions()
-      }, 5_000)
-      await loadSuggestions()
-      setTimeout(() => clearInterval(poll), 125_000)
-      return
-    } catch (e) {
-      toast(
-        e instanceof Error ? e.message : tr('messages.autoSuggestionFailed'),
-        'error'
-      )
-      setAutoSuggesting(false)
-    }
-  }, [symbol, market, resolvedName, holdingLoaded, holdingLoadError, hasHolding, autoSuggesting, loadSuggestions, toast])
-
-  useEffect(() => {
-    if (!props.open || !symbol) return
-    const timer = setTimeout(() => {
-      triggerAutoAiSuggestion().catch(() => undefined)
-    }, 700)
-    return () => clearTimeout(timer)
-  }, [props.open, symbol, market, triggerAutoAiSuggestion])
-
   const miniKlineExtrema = useMemo(() => {
     if (!miniKlines.length) return null
     let low = Number.POSITIVE_INFINITY
@@ -1262,7 +1222,7 @@ export default function StockInsightModal(props: {
   return (
     <>
       <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-        <DialogContent className="w-[92vw] max-w-6xl p-5 md:p-6 overflow-x-hidden">
+        <DialogContent className="w-[92vw] max-w-6xl p-5 md:p-6 flex flex-col overflow-hidden h-[90dvh]">
           <DialogHeader className="mb-3">
             <div className="flex items-start justify-between gap-3 pr-10 md:pr-8">
               <div className="shrink-0">
@@ -1403,7 +1363,9 @@ export default function StockInsightModal(props: {
             </div>
           </div>
 
-          <div className="max-h-[68vh] overflow-y-auto overflow-x-hidden pr-1 scrollbar">
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 scrollbar">
+            {tab === 'overview' && <TradingDayPanel symbol={symbol} market={market} />}
+
             {tab === 'overview' && (
               <div className="space-y-3">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-stretch">

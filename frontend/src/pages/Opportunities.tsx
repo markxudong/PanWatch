@@ -1,3 +1,4 @@
+import ContinuationWatch from '@/components/ContinuationWatch'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, RefreshCw, Share2, Sparkles } from 'lucide-react'
 import {
@@ -534,6 +535,10 @@ export default function OpportunitiesPage() {
         </div>
       </div>
 
+      <ContinuationWatch onOpen={(symbol, name) => {
+        setInsightSymbol(symbol); setInsightName(name); setInsightMarket('CN'); setInsightHasPosition(false); setInsightOpen(true)
+      }} />
+      <p className="text-xs text-muted-foreground mb-3">以下为原有策略机会：基于策略信号、因子与行情条件筛选，与上方连板观察独立，不代表买入指令。</p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <div className="card p-3">
           <div className="text-[11px] text-muted-foreground">{oppT('opportunities.currentCandidates')}</div>

@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { Moon, Sun, Monitor, Check, LogOut, Stethoscope, Languages, type LucideIcon } from 'lucide-react'
 import { isAuthenticated, logout } from '@panwatch/api'
@@ -53,25 +54,8 @@ export default function AccountMenu({
   const currentLocale = normalizeLocale(i18nInstance.resolvedLanguage || i18nInstance.language)
   useInterfaceLanguage()
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement | null>(null)
   const location = useLocation()
   const avatar = useAvatar()
-  // 仅在支持 hover 的设备(PC)启用悬停展开;触屏维持点击
-  const [canHover] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches,
-  )
-
-  // 点击外部关闭
-  useEffect(() => {
-    const onPointerDown = (e: PointerEvent) => {
-      if (open && ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('pointerdown', onPointerDown)
-    return () => document.removeEventListener('pointerdown', onPointerDown)
-  }, [open])
-
   // 路由变化时关闭
   useEffect(() => {
     setOpen(false)
@@ -80,14 +64,9 @@ export default function AccountMenu({
   const avatarSize = size === 'sm' ? 'w-6 h-6' : 'w-7 h-7'
 
   return (
-    <div
-      className="relative"
-      ref={ref}
-      onMouseEnter={canHover ? () => setOpen(true) : undefined}
-      onMouseLeave={canHover ? () => setOpen(false) : undefined}
-    >
+    <DropdownMenu.Root open={open} onOpenChange={setOpen}>
+      <DropdownMenu.Trigger asChild>
       <button
-        onClick={() => setOpen(v => !v)}
         className={`${avatarSize} rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm ring-1 transition-all ${
           open ? 'ring-primary/50' : 'ring-border/40 hover:ring-primary/40'
         }`}
@@ -96,28 +75,27 @@ export default function AccountMenu({
       >
         <UserAvatar src={avatar} alt={t('account.avatarAlt')} />
       </button>
+      </DropdownMenu.Trigger>
 
-      {open && (
-        // top-full + pt-2:用透明内边距桥接头像与菜单,hover 移入不断开
-        <div className="absolute right-0 top-full pt-2 z-50">
-          <div className="w-56 rounded-xl border border-border/60 bg-card/95 backdrop-blur p-1.5 shadow-xl">
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content align="end" sideOffset={8} collisionPadding={12}
+          className="z-[70] w-60 max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto scrollbar rounded-xl border border-border/60 bg-card p-1.5 shadow-xl">
           {/* 原“更多”导航 */}
           {navItems.map(({ to, icon: Icon, label }) => {
             const isActive = location.pathname.startsWith(to)
             return (
-              <NavLink
-                key={to}
+              <DropdownMenu.Item key={to} asChild><NavLink
                 to={to}
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] transition-colors ${
                   isActive
                     ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/60'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/60 focus:bg-accent/60 outline-none'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {label}
-              </NavLink>
+              </NavLink></DropdownMenu.Item>
             )
           })}
 
@@ -128,19 +106,18 @@ export default function AccountMenu({
           {THEME_OPTIONS.map(({ value, icon: Icon, labelKey }) => {
             const active = mode === value
             return (
-              <button
-                key={value}
+              <DropdownMenu.Item key={value} asChild onSelect={e => e.preventDefault()}><button
                 onClick={() => onSetMode(value)}
                 className={`flex w-full items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] transition-colors ${
                   active
                     ? 'text-foreground bg-accent/40'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/60'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/60 focus:bg-accent/60 outline-none'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {t(`account.theme.${labelKey}`)}
                 {active && <Check className="w-3.5 h-3.5 ml-auto text-primary" />}
-              </button>
+              </button></DropdownMenu.Item>
             )
           })}
 
@@ -149,50 +126,48 @@ export default function AccountMenu({
           {LANGUAGE_OPTIONS.map(({ value, labelKey }) => {
             const active = currentLocale === value
             return (
-              <button
-                key={value}
+              <DropdownMenu.Item key={value} asChild onSelect={e => e.preventDefault()}><button
                 onClick={() => void changeLocale(value)}
                 className={`flex w-full items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] transition-colors ${
                   active
                     ? 'text-foreground bg-accent/40'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/60'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/60 focus:bg-accent/60 outline-none'
                 }`}
               >
                 <Languages className="w-3.5 h-3.5" />
                 {t(`language.${labelKey}`)}
                 {active && <Check className="w-3.5 h-3.5 ml-auto text-primary" />}
-              </button>
+              </button></DropdownMenu.Item>
             )
           })}
 
           <div className="my-1 h-px bg-border/50" />
           {/* 系统自检:打开弹窗(逐项检查数据源/AI/通知连通性) */}
-          <button
+          <DropdownMenu.Item asChild><button
             onClick={() => {
               setOpen(false)
               onOpenSelfCheck()
             }}
-            className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors"
+            className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-accent/60 focus:bg-accent/60 outline-none transition-colors"
           >
             <Stethoscope className="w-3.5 h-3.5" />
             {t('account.selfCheck')}
-          </button>
+          </button></DropdownMenu.Item>
 
           {isAuthenticated() && (
             <>
               <div className="my-1 h-px bg-border/50" />
-              <button
+              <DropdownMenu.Item asChild><button
                 onClick={logout}
                 className="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 {t('account.signOut')}
-              </button>
+              </button></DropdownMenu.Item>
             </>
           )}
-          </div>
-        </div>
-      )}
-    </div>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   )
 }

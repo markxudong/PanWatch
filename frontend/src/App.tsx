@@ -98,8 +98,8 @@ function App() {
     icon: item.icon,
     label: t(`navigation:items.${item.labelKey}`),
   }))
-  const desktopPrimaryNavItems = navItems.slice(0, 5)
-  const desktopMoreNavItems = navItems.slice(5)
+  const desktopPrimaryNavItems = navItems.filter(item => ['/', '/portfolio', '/assistant', '/agents', '/opportunities'].includes(item.to))
+  const desktopMoreNavItems = navItems.filter(item => !desktopPrimaryNavItems.includes(item))
   const mobilePrimaryNavItems = navItems.slice(0, 5)
   const mobileMoreNavItems = navItems.slice(5)
 
@@ -152,9 +152,9 @@ function App() {
         : 'min-h-screen pb-16 md:pb-0 relative overflow-x-clip bg-background'}
     >
       <AmbientBackground />
-      {/* Desktop Floating Nav */}
-      <div className="sticky top-0 z-50 shrink-0 px-4 md:px-6 pt-3 md:pt-4 pb-2 hidden md:block">
-        <header className="card px-4 md:px-5">
+      {/* Desktop navigation */}
+      <div className="relative z-50 shrink-0 hidden md:block border-b border-border bg-background">
+        <header className="px-6 mx-auto max-w-[1600px]">
           <div className="h-14 flex items-center justify-between">
             {/* Logo */}
             <NavLink to="/" className="flex items-center gap-2.5 group">
@@ -228,8 +228,8 @@ function App() {
       </div>
 
       {/* Mobile Top Bar */}
-      <div className="sticky top-0 z-50 shrink-0 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2 md:hidden">
-        <header className="card px-4">
+      <div className="relative z-50 shrink-0 pt-[env(safe-area-inset-top)] md:hidden border-b border-border bg-background">
+        <header className="px-4">
           <div className="h-12 flex items-center justify-between">
             <NavLink to="/" className="flex shrink-0 items-center gap-2 group">
               <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">

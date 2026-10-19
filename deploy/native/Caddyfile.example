@@ -1,0 +1,6 @@
+# Replace the hostname with a domain whose A/AAAA records reach this server.
+# Merge with an existing site's handlers; do not overwrite unrelated routes.
+panwatch.example.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8000
+}

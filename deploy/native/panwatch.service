@@ -1,0 +1,35 @@
+[Unit]
+Description=PanWatch native application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=panwatch
+Group=panwatch
+WorkingDirectory=/opt/panwatch
+Environment=TZ=Asia/Shanghai
+Environment=HOME=/var/lib/panwatch
+Environment=DATA_DIR=/var/lib/panwatch
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PLAYWRIGHT_SKIP_BROWSER_INSTALL=1
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=OMP_NUM_THREADS=1
+EnvironmentFile=-/etc/panwatch.env
+ExecStart=/opt/panwatch/.venv/bin/uvicorn server:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+MemoryHigh=650M
+MemoryMax=750M
+TasksMax=128
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/panwatch
+
+[Install]
+WantedBy=multi-user.target

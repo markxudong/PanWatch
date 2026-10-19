@@ -358,6 +358,12 @@ class DailyReportAgent(BaseAgent):
                         f"- 持仓：{total_qty}股 成本{avg_cost:.2f} 浮盈{pnl_pct:+.1f}%（{style}）"
                     )
 
+            if not position:
+                lines.append("- 持仓状态：未提供有效持仓记录；请用户确认空仓或补录，不能假设有可卖底仓")
+            lines.append("- 可卖数量：未提供；不能由总持仓推断当日可卖数量")
+            if quote:
+                lines.append(f"- 行情对象时间：{quote.timestamp}（可能为采集时间，不能据此保证交易所行情新鲜度）；无法确认对应交易日时，不输出确定做 T 价位")
+
             kline_history = stock_ctx.get("kline_history") or {}
             if kline_history.get("available"):
                 ret_5d = kline_history.get("ret_5d")

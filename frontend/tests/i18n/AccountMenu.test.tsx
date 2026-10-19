@@ -20,6 +20,19 @@ describe('AccountMenu language switcher', () => {
     await changeLocale('zh-CN')
   })
 
+  it('opens on click after hover and closes with Escape', async () => {
+    const user = userEvent.setup()
+    render(<MemoryRouter><AccountMenu navItems={[]} mode="system" onSetMode={vi.fn()} onOpenSelfCheck={vi.fn()} /></MemoryRouter>)
+    const trigger = screen.getByRole('button', { name: '账户与设置' })
+    await user.hover(trigger)
+    expect(screen.queryByRole('menu')).toBeNull()
+    await user.click(trigger)
+    expect(screen.getByRole('menu')).toBeTruthy()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
+
   it('changes and persists the locale from the avatar menu', async () => {
     const user = userEvent.setup()
     render(
@@ -34,10 +47,11 @@ describe('AccountMenu language switcher', () => {
     )
 
     await user.click(screen.getByRole('button', { name: '账户与设置' }))
-    await user.click(screen.getByRole('button', { name: 'English' }))
+    await user.click(screen.getByRole('menuitem', { name: 'English' }))
 
     expect(document.documentElement.lang).toBe('en-US')
     expect(window.localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('en-US')
+    await user.keyboard('{Escape}')
     expect(screen.getByRole('button', { name: 'Account and settings' })).toBeTruthy()
   })
 })

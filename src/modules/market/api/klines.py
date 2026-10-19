@@ -176,3 +176,16 @@ def get_kline_summary_batch(payload: KlineSummaryBatchRequest):
     with ThreadPoolExecutor(max_workers=min(5, len(unique_keys))) as executor:
         futures = {key: executor.submit(load_one, *key) for key in unique_keys}
         return [futures[key].result() for key in keys]
+
+
+@router.get("/{symbol}/intraday")
+def get_intraday_chart(symbol: str, market: str = "CN"):
+    from src.modules.market.intraday_chart import intraday_chart
+    _parse_market(market)
+    return intraday_chart(symbol, market)
+
+
+@router.get('/boards/continuation/watch')
+def get_continuation_watch():
+    from src.modules.market.continuation import continuation_watch
+    return continuation_watch()

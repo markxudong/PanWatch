@@ -1,3 +1,4 @@
+import WatchlistBoard from '@/components/WatchlistBoard'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
@@ -454,6 +455,8 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      <WatchlistBoard onOpen={(symbol, market, name) => openStock(symbol, market, name)} />
 
       {/* 指数走势 pills */}
       <div className="mb-3 grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-5">
